@@ -318,7 +318,7 @@ class _GeneratorPageState extends State<GeneratorPage> {
 
       // Send coordinates along with radius to the backend
       final response = await http.get(
-        Uri.parse('$backendUrl?latitude=$latitude&longitude=$longitude&radius=$radius'),
+        Uri.parse('$backendUrl?longitude=$longitude&latitude=$latitude&radius=$radius'),
       );
 
       if (response.statusCode == 200) {
@@ -333,6 +333,7 @@ class _GeneratorPageState extends State<GeneratorPage> {
           _errorMessage = null;
         });
       }
+      print(response.statusCode);
     } else {
       setState(() {
         _errorMessage = "Unable to retrieve coordinates for the address.";
