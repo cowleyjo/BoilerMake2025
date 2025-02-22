@@ -38,6 +38,14 @@ class MyAppState extends ChangeNotifier {
   final random = Random();
   var favorites = <String>[];
 
+  /*void login(String username, String password) {
+    if (username.isNotEmpty && password.isNotEmpty) {
+      isAuthenticated = true;
+      notifyListeners();
+    }
+  }
+  */
+
   void login(String username, String password, String type) async {
   if (username.isNotEmpty && password.isNotEmpty && type.isNotEmpty) {
     try {
@@ -56,10 +64,14 @@ class MyAppState extends ChangeNotifier {
         if (responseBody['found'] == 'true') {
           // Login successful
           print('Login successful!');
+          isAuthenticated = true;
+          notifyListeners();
           // Handle successful login (e.g., navigate to the next page)
         } else {
           // Handle login failure
           print('Invalid credentials!');
+          isAuthenticated = false;
+          notifyListeners();
           // Optionally, show an error message to the user
         }
       } else {
@@ -75,7 +87,7 @@ class MyAppState extends ChangeNotifier {
     // Show validation message
   }
 }
-
+  /*
   void createAccount(String username, String password) {
     if (username.isNotEmpty && password.isNotEmpty) {
       isAuthenticated = true;
@@ -83,12 +95,65 @@ class MyAppState extends ChangeNotifier {
       notifyListeners();
     }
   }
+  */
 
+  Future<void> createAccount(String username, String password, String userType) async {
+  if (username.isNotEmpty && password.isNotEmpty) {
+    try {
+      // Define the Flask backend URL
+      var url = Uri.parse('http://127.0.0.1:5000/make-user');
+
+      // Send a POST request with JSON data
+      var response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "username": username,
+          "password": password,
+          "type": userType  // You can modify this as needed
+        }),
+      );
+
+      // Check the response from Flask
+      if (response.statusCode == 200) {
+        print("New Account Created! Yippee");
+        isAuthenticated = true;
+        notifyListeners();
+      } else {
+        print("Failed: ${response.body}");
+        isAuthenticated = false;
+        notifyListeners();
+      }
+    } catch (e) {
+      print("Error: $e");
+    }
+  }
+}
+  /*
   void getNext() {
     current = names[random.nextInt(names.length)]; // Pick a random name
     notifyListeners();
   }
+  */
+  Future<void> getNext(double long, double lat, double rad) async {
+  try {
+    var url = Uri.parse(
+        'http://127.0.0.1:5000/get-pet?longitude=$long&latitude=$lat&radius=$rad');
 
+    var response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      var data = jsonDecode(response.body);
+      current = data['name'];  // Update current pet name
+    } else {
+      print("No pet found");
+    }
+  } catch (e) {
+    print("Error: $e");
+  }
+  notifyListeners();
+}
+  /*
   void toggleFavorite() {
     if (favorites.contains(current)) {
       favorites.remove(current);
@@ -98,6 +163,33 @@ class MyAppState extends ChangeNotifier {
     getNext();
     notifyListeners();
   }
+  */
+  Future<void> toggleFavorite(String username, String password, double petID, double long, double lat, double rad) async {
+  if (current.isNotEmpty) {
+    if (favorites.contains(current)) {
+      favorites.remove(current);
+    } else {
+      favorites.add(current);
+    }
+
+    try {
+      var url = Uri.parse(
+          'http://127.0.0.1:5000/pick-pet?adopterUsername=$username&adopterPassword=$password&petID=$petID');
+
+      var response = await http.post(url);
+
+      if (response.statusCode == 200) {
+        print("Pet added to favorites!");
+      } else {
+        print("Failed to pick pet");
+      }
+    } catch (e) {
+      print("Error: $e");
+    }
+  }
+  getNext(long, lat, rad);  // Move to the next pet
+  notifyListeners();
+}
 
   void toggleRole(String userType) {
     //isShelter = !isShelter;
@@ -140,6 +232,8 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
+String username = '';
+String password = '';
 class _LoginPageState extends State<LoginPage> {
   // Controllers for the username and password fields.
   final _usernameController = TextEditingController();
@@ -203,8 +297,9 @@ class _LoginPageState extends State<LoginPage> {
                 ElevatedButton(
                   onPressed: (){
                     context.read<MyAppState>().createAccount(
-                      _usernameController.text, 
-                      _passwordController.text
+                      username = _usernameController.text,
+                      password = _passwordController.text,
+                      userType = userType
                       );
                 }, 
                 child: Text('Create Account')),
@@ -214,8 +309,9 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: () {
                   // Call login on the app state. This could be replaced by an API call.
                   context.read<MyAppState>().login(
-                      _usernameController.text,
-                      _passwordController.text,
+                      username = _usernameController.text,
+                      password = _passwordController.text,
+                      userType = userType
                     );
               },
               child: const Text('Login'),
@@ -321,6 +417,10 @@ class _GeneratorPageState extends State<GeneratorPage> {
   }
 
   // Function to fetch pet data from backend
+  double _latitude = 0;
+  double _longitude = 0;
+  double _radius = 10.0;
+  var petID;
   Future<void> _getPet() async {
     String address = _addressController.text;
     double radius = double.tryParse(_radiusController.text) ?? 10.0;
@@ -355,7 +455,8 @@ class _GeneratorPageState extends State<GeneratorPage> {
       if (response.statusCode == 200) {
         var pet = jsonDecode(response.body);
         setState(() {
-          _petResult = "Found Pet: ${pet['name']}, Age: ${pet['age']}";
+          _petResult = "id: ${pet['id']}, Found Pet: ${pet['name']}, Age: ${pet['age']}";
+          petID = pet['id'];
           _errorMessage = null; // Clear any previous error messages
         });
       } else {
@@ -376,13 +477,6 @@ class _GeneratorPageState extends State<GeneratorPage> {
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
     var animal = appState.current;
-
-    IconData icon;
-    if (appState.favorites.contains(animal)) {
-      icon = Icons.favorite;
-    } else {
-      icon = Icons.favorite_border;
-    }
 
     return Scaffold(
       appBar: AppBar(title: Text("Find a Pet")),
@@ -416,10 +510,10 @@ class _GeneratorPageState extends State<GeneratorPage> {
             SwipeableCard(
               name: animal,
               onLike: () {
-                appState.toggleFavorite();
+                appState.toggleFavorite(username, password, petID, _latitude, _longitude, _radius);
               },
               onNext: () {
-                appState.getNext();
+                appState.getNext(_latitude, _longitude, _radius);
               },
             ),
           ],
@@ -574,9 +668,9 @@ class _SwipeableCardState extends State<SwipeableCard> with SingleTickerProvider
       },
       onPanEnd: (details) {
         // Determine if the drag distance exceeds the threshold
-        if (_offsetX < threshold) {
+        if (_offsetX > threshold) {
           widget.onLike();
-        } else if (_offsetX > -threshold) {
+        } else if (_offsetX < -threshold) {
           widget.onNext();
         }
         // Reset the offset with a smooth animation if desired
