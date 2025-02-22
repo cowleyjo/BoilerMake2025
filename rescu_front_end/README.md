@@ -1,3 +1,9 @@
+---
+noteId: "1107f620f0c611ef87a91f82f02a594d"
+tags: []
+
+---
+
 # rescu_front_end
 
 A new Flutter project.
