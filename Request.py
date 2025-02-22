@@ -1,4 +1,6 @@
-from flask_cors import Flask, jsonify, CORS
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+
 import sqlite3
 import requests
 import math
@@ -25,7 +27,11 @@ def haversine(lat1, lon1, lat2, lon2):
 
 
 @app.route('/get-pet', methods=['GET'])
-def get_pet(lon, lat, radius):
+def get_pet():
+
+    lon = float(request.args.get('longitude'))  # 'longitude' from request
+    lat = float(request.args.get('latitude'))  # 'latitude' from request
+    radius = float(request.args.get('radius'))  # 'radius' from request
 
     # Establish connection to DB
     conn = sqlite3.connect('my_database.db') #TODO: REPLACE WITH NAME
