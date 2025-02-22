@@ -1,6 +1,5 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-
 import sqlite3
 import requests
 import math
@@ -63,7 +62,11 @@ def get_pet():
 
 
 @app.route('/check-user', methods=['GET'])
-def check_user(username, password, type):
+def check_user():
+
+    username = (request.args.get('username')) 
+    password = (request.args.get('password')) 
+    type = (request.args.get('type')) 
 
     #Establish connection to DB
     conn = sqlite3.connect('my_database.db') #TODO: REPLACE WITH NAME
@@ -83,7 +86,12 @@ def check_user(username, password, type):
 
 
 @app.route('/make-user', methods=['POST'])
-def make_user(username, passowrd):
+def make_user():
+
+    
+    username = (request.args.get('username'))
+    password = (request.args.get('password'))
+    type = (request.args.get('type'))
 
     #Establish connection to DB
     conn = sqlite3.connect('my_database.db') #TODO: REPLACE WITH NAME
@@ -101,7 +109,9 @@ def make_user(username, passowrd):
 
 
 @app.route('/pick-pet', methods=['POST'])
-def pick_pet(id):
+def pick_pet():
+
+    id = float(request.args.get('id'))
 
     #Establish connection to DB
     conn = sqlite3.connect('my_database.db') #TODO: REPLACE WITH NAME
