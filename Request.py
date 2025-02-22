@@ -1,10 +1,11 @@
-from flask import Flask, jsonify
+from flask_cors import Flask, jsonify, CORS
 import sqlite3
 import requests
 import math
 
 
 app = Flask(__name__)
+CORS(app)
 
 
 def haversine(lat1, lon1, lat2, lon2):
@@ -22,29 +23,10 @@ def haversine(lat1, lon1, lat2, lon2):
     return R * c  # Distance in km
 
 
-def get_coordinates(address):
-
-    url = "https://nominatim.openstreetmap.org/search"
-    params = {
-        "q": address,
-        "format": "json"
-    }
-
-    response = requests.get(url, params=params)
-
-    if response.status_code == 200 and response.json():
-        data = response.json()[0]  # Get first result
-        return {"latitude": data["lat"], "longitude": data["lon"]}
-    else:
-        return {"error": "Address not found"}
-
 
 @app.route('/get-pet', methods=['GET'])
-def get_pet(address, radius):
+def get_pet(lon, lat, radius):
 
-    your_coords = get_coordinates(address)
-
-    #TODO: it needs to be in a certain location radius :(
     # Establish connection to DB
     conn = sqlite3.connect('my_database.db') #TODO: REPLACE WITH NAME
     cursor = conn.cursor()
@@ -55,9 +37,11 @@ def get_pet(address, radius):
         cursor.execute("SELECT * FROM users ORDER BY RANDOM() LIMIT 1;")
         row = cursor.fetchone()  # Get a single row (fetchone instead of fetchall)
 
-        shelter_coords = get_coordinates(row[2])  #change number here
+        shelter_lon = row[1]  #TODO: change number here
+        shelter_lat = row[2]  #TODO: change number here
 
-        distance = haversine(your_coords[0], your_coords[1], shelter_coords[0], shelter_coords[1])  # probably need to change numbers here to to access individual lat and long
+
+        distance = haversine(lon, lat, shelter_lon, shelter_lat)  #TODO: probably need to change numbers here to to access individual lat and long
         if (distance <= radius):
             found = True
 
@@ -72,29 +56,62 @@ def get_pet(address, radius):
         return jsonify({"error": "No data found"}), 404
 
 
-#@app.route('/pick-pet', methods=['GET'])
-#def pick_pet():
+@app.route('/check-user', methods=['GET'])
+def check_user(username, password, type):
 
-    # Establish connection to DB
-    #conn = sqlite3.connect('my_database.db') #TODO: REPLACE WITH NAME
-    #cursor = conn.cursor()
+    #Establish connection to DB
+    conn = sqlite3.connect('my_database.db') #TODO: REPLACE WITH NAME
+    cursor = conn.cursor()
 
-    #TODO: make this change the table somehow to connect pet and adopter
-    #row = cursor.execute("SELECT * FROM users ORDER BY RANDOM() LIMIT 1;")
+    cursor.execute("SELECT * FROM users ORDER BY RANDOM() LIMIT 1;") #TODO: replace to get user
+    row = cursor.fetchone
+    
+    # Close connection to DB
+    conn.close()
 
-    #TODO: check if successful somehow
+    if row:
+        return jsonify({"found": "true"})
+    else:
+        return jsonify({"found": "false"})
+    
 
+
+@app.route('/make-user', methods=['POST'])
+def make_user(username, passowrd):
+
+    #Establish connection to DB
+    conn = sqlite3.connect('my_database.db') #TODO: REPLACE WITH NAME
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users ORDER BY RANDOM() LIMIT 1;") #TODO: replace to make user
+    row = cursor.fetchone
 
     # Close connection to DB
-    #conn.close()
+    conn.close()
 
-    # TODO: make it return if successful or not
-    #if row:
-        #output = {"id": row[0], "name": row[1], "age": row[2]} #TODO: MAKE NORMAL PROPERTIES
-        #return jsonify(output)
-    #else:
-        #return jsonify({"error": "No data found"}), 404
 
+    return jsonify({"status": "success"}), 200
+
+
+
+@app.route('/pick-pet', methods=['POST'])
+def pick_pet(id):
+
+    #Establish connection to DB
+    conn = sqlite3.connect('my_database.db') #TODO: REPLACE WITH NAME
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users ORDER BY RANDOM() LIMIT 1;") #TODO: replace to get pet
+    row = cursor.fetchone
+
+    # Close connection to DB
+    conn.close()
+
+    if row:
+        return jsonify({"found": "true"}), 200
+    else:
+        return jsonify({"found": "false"}), 404
+    
 
 if __name__ == '__main__':
     app.run(debug=True)
