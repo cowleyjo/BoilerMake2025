@@ -126,7 +126,7 @@ class _LoginPageState extends State<LoginPage> {
           children: [
             // Header
             Text(
-              'Rescue',
+              'RescU',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
@@ -278,7 +278,6 @@ class _GeneratorPageState extends State<GeneratorPage> {
         double latitude = data['results'][0]['geometry']['lat'];
         double longitude = data['results'][0]['geometry']['lng'];
         
-        print("latitude: $latitude, longitude: $longitude");
         return {'latitude': latitude, 'longitude': longitude};
       } else {
         print("No results found for the address.");
