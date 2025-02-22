@@ -38,12 +38,43 @@ class MyAppState extends ChangeNotifier {
   final random = Random();
   var favorites = <String>[];
 
-  void login(String username, String password) {
-    if (username.isNotEmpty && password.isNotEmpty) {
-      isAuthenticated = true;
-      notifyListeners();
+  void login(String username, String password, String type) async {
+  if (username.isNotEmpty && password.isNotEmpty && type.isNotEmpty) {
+    try {
+      final response = await http.post(
+        Uri.parse('http://127.0.0.1:5000/check-user'),  // Replace with your actual backend URL
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': username,
+          'password': password,
+          'type': type,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final responseBody = jsonDecode(response.body);
+        if (responseBody['found'] == 'true') {
+          // Login successful
+          print('Login successful!');
+          // Handle successful login (e.g., navigate to the next page)
+        } else {
+          // Handle login failure
+          print('Invalid credentials!');
+          // Optionally, show an error message to the user
+        }
+      } else {
+        // Handle response error (non-200 response)
+        print('Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error: $e');
+      // Optionally, show a generic error message if the API request fails
     }
+  } else {
+    print('Please fill in all fields.');
+    // Show validation message
   }
+}
 
   void createAccount(String username, String password) {
     if (username.isNotEmpty && password.isNotEmpty) {
