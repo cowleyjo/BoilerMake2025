@@ -146,7 +146,7 @@ def check_user():
     conn.close()
 
     if row:
-        return jsonify({"found": "true"})
+        return jsonify({"found": "true", "location": row[5]})
     else:
         return jsonify({"found": "false"})
 
