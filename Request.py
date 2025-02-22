@@ -95,20 +95,20 @@ def get_pet():
     radius = float(request.args.get('radius'))  # 'radius' from request
 
     # Establish connection to DB
-    conn = sqlite3.connect('my_database.db') #TODO: REPLACE WITH NAME
+    conn = sqlite3.connect('my_database.db')
     cursor = conn.cursor()
 
     found = False
     while (found != True):
         #picks a random row
         cursor.execute("SELECT * FROM users ORDER BY RANDOM() LIMIT 1;")
-        row = cursor.fetchone()  # Get a single row (fetchone instead of fetchall)
+        row = cursor.fetchone()  
 
         shelter_lon = row[1]  #TODO: change number here
         shelter_lat = row[2]  #TODO: change number here
 
 
-        distance = haversine(lon, lat, shelter_lon, shelter_lat)  #TODO: probably need to change numbers here to to access individual lat and long
+        distance = haversine(lon, lat, shelter_lon, shelter_lat)
         if (distance <= radius):
             found = True
 
@@ -151,7 +151,48 @@ def check_user():
         return jsonify({"found": "false"})
 
     
+@app.route('/make-pet', methods=['POST'])
+def make_pet():
+    name = request.form.get('name')  # Change to .form.get() for POST request
+    age = request.form.get('age')
+    sex = request.form.get('sex')
+    size = request.form.get('size')
+    type = request.form.get('type')
+    shelter = request.form.get('shelter')
+    pic = request.form.get('pic')
+    descr = request.form.get('descr')
 
+
+    # Check for empty values
+    if not name or not age or not sex or not size or not type or not shelter or not pic or not descr:
+        return jsonify({"status": "failure", "message": "Missing required fields"}), 400
+
+    try:
+        # Establish connection to DB
+        conn = sqlite3.connect('my_database.db')
+        cursor = conn.cursor()
+        print("Attempting to write")
+
+        # Insert the new user into the database
+        cursor.execute("""
+            INSERT INTO Pets (name, age, sex, size, type, shelter, pic, descr) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (name, age, sex, size, type, shelter, pic, descr))
+
+        # Commit the transaction
+        conn.commit()
+        print("User added successfully!")  # Debugging
+
+    except Exception as e:
+        print(f"Error inserting data: {e}")
+        conn.rollback()
+        return jsonify({"status": "failure", "message": f"Error: {e}"}), 500
+
+    finally:
+        # Close connection
+        conn.close()
+
+    return jsonify({"status": "success", "message": "Pet created successfully!"}), 200
 
 @app.route('/make-user', methods=['POST'])
 def make_user():
