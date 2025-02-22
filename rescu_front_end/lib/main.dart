@@ -1,4 +1,3 @@
-import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math';
@@ -29,6 +28,7 @@ class MyApp extends StatelessWidget {
 class MyAppState extends ChangeNotifier {
   
   bool isAuthenticated = false;
+  bool isShelter = false; // Tracks if the user is a shelter
 
   List<String> names = ['Buddy', 'Max', 'Bella', 'Charlie', 'Luna', 'Rocky', 'Milo', 'Daisy'];
   var current = "Bella";
@@ -65,6 +65,17 @@ class MyAppState extends ChangeNotifier {
     getNext();
     notifyListeners();
   }
+
+  void toggleRole(String userType) {
+    //isShelter = !isShelter;
+    if (userType == 'Adopter') {
+      isShelter = false;
+    } else if (userType == 'Shelter') {
+      isShelter = true;
+    }
+    print("Is shelter $isShelter");
+    notifyListeners();
+  }
 }
 
 //Wraps the app and prevents access without a login
@@ -74,7 +85,11 @@ class AuthWrapper extends StatelessWidget {
     var appState = context.watch<MyAppState>();
 
     if (appState.isAuthenticated) {
-      return MyHomePage();
+      if (appState.isShelter) {
+        return ShelterScreen();
+      } else {
+        return MyHomePage();
+      }
     } else {
       return LoginPage();
     }
@@ -128,6 +143,7 @@ class _LoginPageState extends State<LoginPage> {
               onChanged: (value) {
                 setState(() {
                   userType = value!;
+                  context.read<MyAppState>().toggleRole(userType);
                   print("User Type $userType");
                 });
               },
@@ -290,6 +306,58 @@ class FavoritesPage extends StatelessWidget {
             title: Text(animal),
           ),
       ],
+    );
+  }
+}
+
+// The Shelter Screen allows shelters to add animals
+class ShelterScreen extends StatefulWidget {
+  @override
+  _ShelterScreenState createState() => _ShelterScreenState();
+}
+
+class _ShelterScreenState extends State<ShelterScreen> {
+  final TextEditingController _nameController = TextEditingController();
+  List<String> shelterAnimals = []; // List of animals added
+
+  void addAnimal() {
+    if (_nameController.text.isNotEmpty) {
+      setState(() {
+        shelterAnimals.add(_nameController.text);
+      });
+      _nameController.clear();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Shelter Animal Management")),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _nameController,
+              decoration: InputDecoration(labelText: "Animal Name"),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: addAnimal,
+            child: Text("Add Animal"),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: shelterAnimals.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(shelterAnimals[index]),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
