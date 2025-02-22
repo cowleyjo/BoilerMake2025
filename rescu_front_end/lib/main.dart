@@ -422,8 +422,8 @@ class _GeneratorPageState extends State<GeneratorPage> {
   double _radius = 10.0;
   var petID;
   Future<void> _getPet() async {
-    String address = _addressController.text;
     double radius = double.tryParse(_radiusController.text) ?? 10.0;
+    String address = _addressController.text;
 
     if (address.isEmpty) {
       setState(() {
@@ -560,9 +560,16 @@ class ShelterScreen extends StatefulWidget {
   _ShelterScreenState createState() => _ShelterScreenState();
 }
 
+String prevAddress = '';
 class _ShelterScreenState extends State<ShelterScreen> {
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();  // Address controller
   List<String> shelterAnimals = []; // List of animals added
+  
+  Future<void> _handleAddressInput() async {
+    
+  }
+
 
   void addAnimal() {
     if (_nameController.text.isNotEmpty) {
@@ -586,16 +593,25 @@ class _ShelterScreenState extends State<ShelterScreen> {
               decoration: InputDecoration(labelText: "Animal Name"),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _addressController,  // Address text field
+              decoration: InputDecoration(labelText: "Enter Shelter Address"),
+            ),
+          ),
           ElevatedButton(
             onPressed: addAnimal,
             child: Text("Add Animal"),
           ),
+          SizedBox(height: 20),  // Optional, to separate the list
           Expanded(
             child: ListView.builder(
               itemCount: shelterAnimals.length,
               itemBuilder: (context, index) {
                 return ListTile(
                   title: Text(shelterAnimals[index]),
+                  subtitle: Text("Shelter Address: ${_addressController.text}"),  // Display address
                 );
               },
             ),
@@ -605,6 +621,7 @@ class _ShelterScreenState extends State<ShelterScreen> {
     );
   }
 }
+
 
 // The Card that displays a word pair and can be swiped left or right.
 class BigCard extends StatelessWidget {
