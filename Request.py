@@ -8,40 +8,57 @@ import math
 import sqlite3
 import logging
 
-# Create a new SQLite database or connect to an existing one
-conn = sqlite3.connect('my_database.db')
-cursor = conn.cursor()
-
-# Create the 'users' table if it doesn't exist
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL,
-        password TEXT NOT NULL,
-        type TEXT NOT NULL,
-        latitude REAL NOT NULL,
-        longitude REAL NOT NULL
-    )
-''')
-
-# Commit changes and close the connection
-conn.commit()
-# conn.close()
-
-# Dummy data for users
-
-# Create a connection to the SQLite database
-# conn = sqlite3.connect('my_database.db')
-cursor = conn.cursor()
-
-# Insert dummy data into the 'users' table
-
-# Commit changes and close the connection
-conn.commit()
-conn.close()
-
 app = Flask(__name__)
 CORS(app)
+
+def get_db_connection():
+    conn = sqlite3.connect('my_database.db')
+    conn.row_factory = sqlite3.Row  # Access columns by name instead of index
+    return conn
+
+# Create the 'users' table if it doesn't exist
+@app.before_request
+def create_table():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            password TEXT NOT NULL,
+            type TEXT NOT NULL,
+            latitude REAL NOT NULL,
+            longitude REAL NOT NULL,
+            contact TEXT NOT NULL
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+    # Insert dummy data into the 'users' table
+    insert_dummy_data()
+
+# Function to insert dummy users into the database
+def insert_dummy_data():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Define some dummy user data
+    dummy_users = [
+        ("john_doe", "password123", "Adopter", 40.7128, -74.0060, "johndoe@example.com"),
+        ("jane_smith", "password456", "Shelter", 34.0522, -118.2437, "janesmith@example.com"),
+        ("bob_jones", "password789", "Adopter", 51.5074, -0.1278, "bobjones@example.com"),
+        ("alice_williams", "password012", "Shelter", 48.8566, 2.3522, "alicewilliams@example.com")
+    ]
+    
+    # Insert each dummy user into the 'users' table
+    cursor.executemany('''
+        INSERT INTO users (username, password, type, latitude, longitude, contact)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', dummy_users)
+
+    conn.commit()
+    conn.close()
 
 
 def haversine(lat1, lon1, lat2, lon2):
