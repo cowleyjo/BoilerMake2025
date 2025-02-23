@@ -48,6 +48,7 @@ class StartScreen extends StatelessWidget {
   }
 }
 
+String userLocation = '';
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -58,6 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   String _userType = 'Adopter';  // Default user type
   String? _errorMessage;
+  String? _userLocation;  // Variable to store the user's location
 
   // Login function to communicate with the back-end
   Future<void> loginUser(String username, String password, String type) async {
@@ -74,15 +76,23 @@ class _LoginScreenState extends State<LoginScreen> {
       if (data['found'] == "true") {
         // Handle successful login
         print('User found!');
+        
+        // Store the location returned from the backend (assuming it's in the 'location' field)
+        _userLocation = data['location'];  // Storing the location value
+        
+        // Now you can use the location value as needed, e.g., for navigation or display
+
         // Navigate to the appropriate screen (Adopter or Shelter)
         if (_userType == 'Adopter') {
           Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => AdopterScreen()));
+            context,
+            MaterialPageRoute(builder: (context) => AdopterScreen()),
+          );
         } else {
           Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => ShelterScreen()));
+            context,
+            MaterialPageRoute(builder: (context) => ShelterScreen()),
+          );
         }
       } else {
         // Handle invalid login
@@ -156,6 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+
 
 class CreateAccountScreen extends StatefulWidget {
   @override
