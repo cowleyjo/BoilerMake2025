@@ -157,96 +157,115 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-
-
 class CreateAccountScreen extends StatefulWidget {
   @override
   _CreateAccountScreenState createState() => _CreateAccountScreenState();
 }
 
 class _CreateAccountScreenState extends State<CreateAccountScreen> {
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _locationController = TextEditingController();
-  String _userType = 'Adopter'; // Default value
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _emailController = TextEditingController();  // New controller for email
+  final _locationController = TextEditingController();
 
-  // Function to send the POST request to create the user
+  // Define the user type dropdown
+  String? _userType = 'Adopter';  // Default to Adopter
 
-Future<void> _createAccount() async {
-  String username = _usernameController.text;
-  String password = _passwordController.text;
-  String location = _locationController.text;
-
-  if (username.isNotEmpty && password.isNotEmpty && location.isNotEmpty) {
-    final String backendUrl = 'http://127.0.0.1:5000/make-user';
-
-    try {
-      // Send POST request with data in the body
-      final response = await http.post(
-        Uri.parse(backendUrl),
-        body: {
-          'username': username,
-          'password': password,
-          'type': _userType,
-          'location': location,
-        },
-      );
-
-      if (response.statusCode == 200) {
-        // If the request was successful, navigate to the respective screen
-        if (_userType == 'Adopter') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => AdopterScreen()),
-          );
-        } else if (_userType == 'Shelter') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => ShelterScreen()),
-          );
-        }
-      } else {
-        // If the request failed, show an error
-        print("Failed to create account: ${response.body}");
-      }
-    } catch (e) {
-      // Handle any exceptions
-      print("Error: $e");
-    }
-  } else {
-    print("Please enter all fields.");
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    _emailController.dispose();  // Dispose email controller
+    _locationController.dispose();
+    super.dispose();
   }
-}
 
+  // Handle creating the user (this could be expanded to make a DB insert)
+  Future<void> _createAccount() async {
+    String username = _usernameController.text;
+    String password = _passwordController.text;
+    String location = _locationController.text;
+    String contact = _emailController.text;
+
+    if (username.isNotEmpty && password.isNotEmpty && location.isNotEmpty) {
+      final String backendUrl = 'http://127.0.0.1:5000/make-user';
+
+      try {
+        // Send POST request with data in the body
+        final response = await http.post(
+          Uri.parse(backendUrl),
+          body: {
+            'username': username,
+            'password': password,
+            'type': _userType ?? 'Adopter',  // Default to Adopter if no type selected
+            'location': location,
+            'contact': contact,
+          },
+        );
+
+        if (response.statusCode == 200) {
+          // If the request was successful, navigate to the respective screen
+          if (_userType == 'Adopter') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AdopterScreen()),
+            );
+          } else if (_userType == 'Shelter') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ShelterScreen()),
+            );
+          }
+        } else {
+          // If the request failed, show an error
+          print("Failed to create account: ${response.body}");
+        }
+      } catch (e) {
+        // Handle any exceptions
+        print("Error: $e");
+      }
+    } else {
+      print("Please enter all fields.");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text("Create Account")),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Username field
             TextField(
               controller: _usernameController,
-              decoration: InputDecoration(labelText: "Username"),
+              decoration: InputDecoration(labelText: 'Username'),
             ),
+            // Password field
             TextField(
               controller: _passwordController,
-              decoration: InputDecoration(labelText: "Password"),
+              decoration: InputDecoration(labelText: 'Password'),
               obscureText: true,
             ),
+            // Email field (new input)
+            TextField(
+              controller: _emailController,
+              decoration: InputDecoration(labelText: 'Email'),
+              keyboardType: TextInputType.emailAddress,
+            ),
+            // Location field
             TextField(
               controller: _locationController,
-              decoration: InputDecoration(labelText: "Location"),
+              decoration: InputDecoration(labelText: 'Location'),
             ),
-            SizedBox(height: 20),
+            // User Type dropdown menu
             DropdownButton<String>(
               value: _userType,
               onChanged: (String? newValue) {
                 setState(() {
-                  _userType = newValue!;
+                  _userType = newValue;
                 });
               },
               items: <String>['Adopter', 'Shelter']
@@ -260,7 +279,7 @@ Future<void> _createAccount() async {
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: _createAccount,
-              child: Text("Create Account"),
+              child: Text('Create Account'),
             ),
           ],
         ),
@@ -398,12 +417,141 @@ class _AdopterScreenState extends State<AdopterScreen> with SingleTickerProvider
 }
 
 // Shelter Screen
-class ShelterScreen extends StatelessWidget {
+class ShelterScreen extends StatefulWidget {
+  @override
+  _ShelterScreenState createState() => _ShelterScreenState();
+}
+
+class _ShelterScreenState extends State<ShelterScreen> with SingleTickerProviderStateMixin {
+  // Controller for the tabs
+  late TabController _tabController;
+
+  // Variables for pet input fields
+  final _petNameController = TextEditingController();
+  final _ageController = TextEditingController();
+  final _sexController = TextEditingController();
+  final _sizeController = TextEditingController();
+  final _typeController = TextEditingController();
+  final _shelterController = TextEditingController();
+  final _picController = TextEditingController();
+  final _descriptionController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this); // Two tabs
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _petNameController.dispose();
+    _ageController.dispose();
+    _sexController.dispose();
+    _sizeController.dispose();
+    _typeController.dispose();
+    _shelterController.dispose();
+    _picController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  // Placeholder screen for connected users tab
+  Widget connectedUsersScreen() {
+    return Center(
+      child: Text('List of users who have connected to animals will appear here.'),
+    );
+  }
+
+  // Add Pet screen with form fields
+  Widget addPetScreen() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          // Pet Name Input
+          TextField(
+            controller: _petNameController,
+            decoration: InputDecoration(labelText: 'Pet Name'),
+          ),
+          // Age Input
+          TextField(
+            controller: _ageController,
+            decoration: InputDecoration(labelText: 'Age'),
+            keyboardType: TextInputType.number,
+          ),
+          // Sex Input
+          TextField(
+            controller: _sexController,
+            decoration: InputDecoration(labelText: 'Sex'),
+          ),
+          // Size Input
+          TextField(
+            controller: _sizeController,
+            decoration: InputDecoration(labelText: 'Size'),
+          ),
+          // Type Input
+          TextField(
+            controller: _typeController,
+            decoration: InputDecoration(labelText: 'Type'),
+          ),
+          // Shelter Input
+          TextField(
+            controller: _shelterController,
+            decoration: InputDecoration(labelText: 'Shelter'),
+          ),
+          // Picture URL Input
+          TextField(
+            controller: _picController,
+            decoration: InputDecoration(labelText: 'Picture URL'),
+          ),
+          // Description Input
+          TextField(
+            controller: _descriptionController,
+            decoration: InputDecoration(labelText: 'Description'),
+            maxLines: 4,
+          ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              // Logic to handle adding pet
+              print('Pet Name: ${_petNameController.text}');
+              print('Age: ${_ageController.text}');
+              print('Sex: ${_sexController.text}');
+              print('Size: ${_sizeController.text}');
+              print('Type: ${_typeController.text}');
+              print('Shelter: ${_shelterController.text}');
+              print('Pic URL: ${_picController.text}');
+              print('Description: ${_descriptionController.text}');
+              // You can add code here to save the pet info, etc.
+            },
+            child: Text('Add Pet'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Shelter Screen")),
-      body: Center(child: Text("Welcome Shelter")),
+      appBar: AppBar(
+        title: Text('Shelter Screen'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: [
+            Tab(text: 'Add Pet'),
+            Tab(text: 'Connected Users'), // New tab for connected users
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          addPetScreen(),
+          connectedUsersScreen(), // Connected Users tab
+        ],
+      ),
     );
   }
 }
