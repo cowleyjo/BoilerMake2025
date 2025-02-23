@@ -146,7 +146,7 @@ def check_user():
     conn.close()
 
     if row:
-        return jsonify({"found": "true"})
+        return jsonify({"found": "true", "location": row[5]})
     else:
         return jsonify({"found": "false"})
 
@@ -262,6 +262,26 @@ def pick_pet():
     else:
         return jsonify({"found": "false"}), 404
     
+
+@app.route('/update-shelter', methods=['POST'])
+def update_shelter():
+    #TODO: all the logic here isnt right
+
+    username = (request.args.get('username'))
+    password = (request.args.get('password'))
+
+    #Establish connection to DB
+    conn = sqlite3.connect('rescu.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users ORDER BY RANDOM() LIMIT 1;") #TODO: replace to get pet:adopter pairs that belong to this shelter
+    row = cursor.fetchall()
+
+    # Close connection to DB
+    conn.close()
+
+    
+    return jsonify({"status": "success"}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
